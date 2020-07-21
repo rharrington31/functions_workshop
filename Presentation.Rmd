@@ -1,0 +1,186 @@
+---
+title: "Writing Functions in R"
+author: "Ryan Harrington"
+date: "7/21/2020"
+output:
+  ioslides_presentation:
+    widescreen: true
+css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, include=FALSE}
+if(! require(pacman)) install.packages("pacman")
+pacman::p_load(
+  tidyverse,
+  here,
+  devtools
+)
+
+if(! require(tweetrmd)) devtools::install_github("gadenbuie/tweetrmd")
+
+library(tweetrmd)
+```
+
+## Hello! {.flexbox .vcenter}
+
+<div class="centered">
+<div class="columns-2">
+
+<div class="rounded">
+![](images/Ryan - 2018 (912x912, arms folded).jpg){width=400px; height=400px;}
+</div>
+
+#### @rharrington31
+
+<p class="forceBreak"></p>
+
+<br>
+
+#### Lead Data Scientist @
+
+![](images/CompassRed primary.png){width=400px} <br>
+<br>
+
+#### Co-founder @
+
+![](images/ODD_fullcolor-01.png){width=300px;} <br>
+<!-- columns-2 -->
+</div>
+
+<!-- centered -->
+</div> 
+
+## Goal
+Understand how to write functions in R
+
+### Questions we'll answer...
+
+* What are the basic parts of a function?
+* How do we handle instances where functions might fail?
+* How do we create functions within the [tidyverse](https://www.tidyverse.org/) framework?
+
+## Solving a problem
+
+In order to explore writing functions, we'll consider the question:
+
+### How can we use COVID-19 data in relation to Delaware?
+
+Specifically, we'll be using the data that powers the [Johns Hopkins Coronavirus Resource Center dashboard](https://coronavirus.jhu.edu/map.html).
+
+All of the raw data is available from [Github](https://github.com/CSSEGISandData/COVID-19)
+
+All of the code for this workshop is also available on [Github](https://github.com/rharrington31/functions_workshop)
+
+## Why write a function?
+
+* Repeatability
+* Readability
+* Generalizability
+* Consistency
+
+## When to write a function? {.flexbox .vcenter}
+
+```{r}
+tweet_embed("https://twitter.com/drob/status/928447584712253440")
+```
+
+## How do we write a function?
+
+```{r, echo = TRUE, eval = FALSE}
+function_name <- function(arg1, arg2, ...) {
+  
+  # Your code here!
+  
+  return(something)
+  
+}
+```
+
+* `function_name`: the name of your function that you will use moving forward
+* `arg1, arg2`: the **arguments** or **parameters** that will be required to execute your function
+* `...`: allows you to pass arguments that you haven't explicitly named to your function
+* `{}`: function body; where your code goes
+* `return`: an object that gets returned back to the global environment
+
+## Good names and... less good names
+
+Your function names should be descriptive. Verbs are your friend.
+```{r, echo = TRUE, eval = FALSE}
+## Good
+get_county
+
+## ...less good
+gc
+```
+
+## Good names and... less good names
+
+Don't use names that already exist.
+```{r, echo = TRUE, eval = FALSE}
+## Good
+read_covid_data
+
+## ...less good
+read_csv
+```
+
+## Good names and... less good names
+
+Always `camel_case`...never `snakeCase`.
+```{r, echo = TRUE, eval = FALSE}
+## Good
+graph_covid
+
+## ...less good
+graphCovid
+```
+
+## What do arguments look like in practice?
+
+* You can create functions with no arguments or as many arguments as you'd like
+* You can provide an argument with a default value
+* Arguments do not need to be named explicitly
+* Arguments are evaluated lazily
+
+## The ... argument
+
+This works well for times where you will want to pass additional arguments to another function inside of the function you are writing
+
+```{r, echo = TRUE}
+get_mean <- function(list, ...) {
+  
+  mean(list, ...)
+  
+}
+```
+
+```{r, echo = TRUE}
+items <- 1:100
+
+get_mean(items)
+```
+
+## The ... argument
+
+This works well for times where you will want to pass additional arguments to another function inside of the function you are writing
+
+```{r, echo = TRUE}
+items_with_na <- c(1:100, NA)
+get_mean(items_with_na)
+```
+
+```{r, echo = TRUE}
+get_mean(items_with_na, na.rm = T)
+```
+
+## How do we `return` values?
+
+Counter-intuitively, we **do not** need to explicitly write `return` at the end of every function that we write.
+
+R automatically returns the result of the last evaluated expression. In fact, it is considered best practice to *only* write `return` when we do so early within a function.
+
+Functions can only `return` one object back to the global environment. However, we can get around this by storing objects to a `list` and then returning the `list.

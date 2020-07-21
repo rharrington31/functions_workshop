@@ -1,39 +1,22 @@
----
-title: "Writing Functions in R"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r}
-library(tidyverse)
-```
-
-
-```{r}
-url <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv"
-covid <- read_csv(url)
-```
-
-```{r}
+## read_covid_data
 read_covid_data <- function() {
   
   confirmed <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"
   
   deaths <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv"
   
-
+  # Read deaths
   deaths_df <-
     readr::read_csv(deaths) %>%
     mutate(Type = "Deaths")
   
+  # Get population
   population_df <-
     deaths_df %>%
     select(UID, iso2, iso3, code3, FIPS, Admin2, Province_State, Country_Region,
            Lat, Long_, Combined_Key, Population)
   
+  # Read confirmed cases
   confirmed_df <- 
     readr::read_csv(confirmed) %>% 
     mutate(Type = "Confirmed") %>%
@@ -42,7 +25,8 @@ read_covid_data <- function() {
                                     "Lat", "Long_", "Combined_Key")) %>%
     select(UID, iso2, iso3, code3, FIPS, Admin2, Province_State, Country_Region,
            Lat, Long_, Combined_Key, Population, everything())
-
+  
+  # Union it together
   union(confirmed_df, deaths_df) %>% 
     select(UID, iso2, iso3, code3, FIPS, Admin2, Province_State, Country_Region,
            Lat, Long_, Combined_Key, Type, Population, everything())
@@ -51,95 +35,80 @@ read_covid_data <- function() {
   #             deaths = deaths_df))
   
 }
-```
 
-```{r}
-covid <- read_covid_data()
-```
-
-## Goal
-Understand how to write functions in R
-
-## Why write a function?
-
-* Repeatability
-* Readability
-* Generalizability
-* Consistency
-
-```{r}
-covid %>% 
-  count(Province_State, sort = T)
-
-covid %>% 
-  filter(Admin2 %in% "New Castle",
-         Province_State %in% "Delaware")
-```
-
-```{r}
+## get_county
 get_county <- function(df,
                        County = "New Castle",
                        State = "Delaware"){
   
+  # Check if the county is NULL
   if (is.null(County)) {
+    
+    # If it is, get the whole state
     df %>% 
       filter(Province_State %in% State)
+    
   } else {
+    
+    # If it isn't get specific counties in the state
     df %>% 
       filter(Admin2 %in% County,
              Province_State %in% State)
+    
   }
   
 }
-```
 
-```{r}
-covid %>% 
-  get_county(County = "New Castle")
-```
 
-```{r}
+
+
+## tidy_covid
 tidy_covid <- function(df){
   df %>% 
+    
+    # Turn date fields long
     pivot_longer(cols = matches("^[0-9]+\\/[0-9]+\\/[0-9]+"),
                  names_to = "Date",
                  values_to = "Count") %>% 
+    
+    # Widen based upon type
     pivot_wider(names_from = Type,
                 values_from = Count) %>% 
+    
+    # Force Date field to be type Date
     mutate(Date = as.Date(Date, format = "%m/%d/%y")) %>% 
+    
+    # Move population to the end of the data frame
     select(-Population, everything(), Population)
 }
-```
 
-```{r}
-covid_de <- 
-  covid %>% 
-  get_county(County = NULL) %>% 
-  tidy_covid()
-```
 
-```{r}
 
+## graph_covid
 graph_covid <- function(df,
                         field = Confirmed,
-                        y_scale = "identity") {
+                        ...) {
   
   field <- enquo(field)
   
   number_of_counties <- length(unique(df$Admin2))
   
+  # Check how many counties are being used
   if(number_of_counties > 1) {
     
+    # If more than 1, use a color and group aes
     plot <- 
       df %>% 
       ggplot(aes(x = Date,
                  y = !!field,
                  color = Admin2,
-                 group = Admin2)) +
+                 group = Admin2,
+                 ...)) +
       geom_line()
     
   } else {
     
+    # Otherwise, don't
     plot <-
       df %>% 
       ggplot(aes(x = Date,
@@ -148,9 +117,10 @@ graph_covid <- function(df,
     
   }
   
+  # Add in some details to the plot
   plot +
     scale_y_continuous(labels = scales::comma,
-                       trans = y_scale) +
+                       ...) +
     theme_minimal() +
     theme(legend.position = "top",
           axis.title = element_text(face = "bold"),
@@ -158,17 +128,3 @@ graph_covid <- function(df,
     labs(color = "")
   
 }
-```
-
-```{r}
-covid_de %>% 
-  graph_covid(y_scale = "log10")
-```
-
-```{r}
-covid %>% 
-  get_county(County = NULL) %>% 
-  tidy_covid() %>% 
-  graph_covid()
-```
-

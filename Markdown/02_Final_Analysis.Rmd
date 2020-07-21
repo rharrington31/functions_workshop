@@ -1,0 +1,97 @@
+---
+title: "Writing Functions in R"
+subtitle: "Final Analysis"
+output: 
+  html_document:
+    theme: yeti
+    highlight: textmate
+    toc: TRUE
+    toc_float: TRUE
+    df_print: paged
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(here)
+source(here::here("functions.R"))
+```
+
+## Goal
+Understand county-related COVID-19 data in Delaware
+
+## Read data
+
+```{r}
+covid <- read_covid_data()
+```
+
+## Check County Data
+
+```{r}
+## New Castle
+covid %>% 
+  get_county(County = "New Castle")
+```
+
+```{r}
+# Kent
+covid %>% 
+  get_county(County = "Kent")
+```
+
+```{r}
+# Sussex
+covid %>% 
+  get_county(County = "Sussex")
+```
+
+```{r}
+# All Delaware
+covid %>% 
+  get_county(County = NULL)
+```
+
+## Clean Data
+
+```{r}
+covid_de <- 
+  covid %>% 
+  get_county(County = NULL) %>% 
+  tidy_covid()
+```
+
+## All Counties
+
+### Confirmed Cases - Identity
+
+```{r}
+covid_de %>% 
+  graph_covid()
+```
+
+### Confirmed Cases - log10
+
+```{r}
+covid_de %>% 
+  graph_covid(trans = "log10")
+```
+
+### Confirmed Deaths - Identity
+
+```{r}
+covid_de %>% 
+  graph_covid(field = Deaths)
+```
+
+### Confirmed Deaths - log10
+
+```{r}
+covid_de %>% 
+  graph_covid(field = Deaths,
+              trans = "log10")
+```
